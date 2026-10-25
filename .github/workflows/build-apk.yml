@@ -1,3 +1,4 @@
+
 name: Build DriverHub APK
 
 on:
@@ -5,7 +6,7 @@ on:
   push:
     branches: [main]
     paths:
-      - 'DriverHub.zip'
+      - 'DriverHub_Download_Fresh.zip'
       - '.github/workflows/build-apk.yml'
 
 permissions:
@@ -24,9 +25,15 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test -f DriverHub.zip || { echo '::error::Upload DriverHub.zip to the repository root.'; exit 1; }
-          unzip -q -o DriverHub.zip
-          test -f DriverHub-Android/app/build.gradle.kts || { echo '::error::Wrong ZIP structure: missing DriverHub-Android/app/build.gradle.kts'; exit 1; }
+          test -f DriverHub_Download_Fresh.zip || {
+            echo '::error::ZIP file is missing.'
+            exit 1
+          }
+          unzip -q -o DriverHub_Download_Fresh.zip
+          test -f DriverHub-Android/app/build.gradle.kts || {
+            echo '::error::Android project not found.'
+            exit 1
+          }
 
       - name: Set up Java 17
         uses: actions/setup-java@v4
@@ -37,8 +44,9 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v4
 
-      - name: Install Android SDK platform
-        run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+      - name: Install Android platform
+        run: |
+          sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
 
       - name: Set up Gradle 8.9
         uses: gradle/actions/setup-gradle@v4
@@ -49,7 +57,7 @@ jobs:
         working-directory: DriverHub-Android
         run: gradle --no-daemon :app:assembleDebug --stacktrace
 
-      - name: Upload installable APK
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: DriverHub-APK
